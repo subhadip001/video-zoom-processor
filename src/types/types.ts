@@ -10,6 +10,8 @@ export interface CustomMouseEvent {
   type: string;
   x: number;
   y: number;
+  windowWidth: number;
+  windowHeight: number;
 }
 
 export interface VideoState {

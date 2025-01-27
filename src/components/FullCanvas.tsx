@@ -125,68 +125,30 @@ const FullCanvasVideoPlayer: React.FC<FullCanvasVideoPlayerProps> = ({
       const { event: activeEvt, zoomScale } = getActiveEvent(video.currentTime);
 
       if (activeEvt && canvas && !video.ended) {
-        // Calculate the scaled coordinates based on canvas size
-        const scaleX = frameWidth / window.innerWidth;
-        const scaleY = frameHeight / window.innerHeight;
+        // Get the canvas's bounding rectangle to handle scaling
+        const canvasRect = canvas.getBoundingClientRect();
 
-        const zoomX = activeEvt.x * scaleX + padding;
-        const zoomY = activeEvt.y * scaleY + padding;
+        // Calculate scale factors between recorded window size and current window size
+        const windowScaleX = window.innerWidth / activeEvt.windowWidth;
+        const windowScaleY = window.innerHeight / activeEvt.windowHeight;
 
-        // Draw the background container with shadow
-        context.save();
-        context.beginPath();
-        context.moveTo(padding + borderRadius, padding);
-        context.lineTo(padding + frameWidth - borderRadius, padding);
-        context.quadraticCurveTo(
-          padding + frameWidth,
-          padding,
-          padding + frameWidth,
-          padding + borderRadius
-        );
-        context.lineTo(
-          padding + frameWidth,
-          padding + frameHeight - borderRadius
-        );
-        context.quadraticCurveTo(
-          padding + frameWidth,
-          padding + frameHeight,
-          padding + frameWidth - borderRadius,
-          padding + frameHeight
-        );
-        context.lineTo(padding + borderRadius, padding + frameHeight);
-        context.quadraticCurveTo(
-          padding,
-          padding + frameHeight,
-          padding,
-          padding + frameHeight - borderRadius
-        );
-        context.lineTo(padding, padding + borderRadius);
-        context.quadraticCurveTo(
-          padding,
-          padding,
-          padding + borderRadius,
-          padding
-        );
-        context.closePath();
+        // Scale the coordinates based on window size changes
+        const scaledX = activeEvt.x * windowScaleX;
+        const scaledY = activeEvt.y * windowScaleY;
 
-        // Add shadow
-        context.shadowColor = "rgba(0, 0, 0, 0.3)";
-        context.shadowBlur = 20;
-        context.shadowOffsetX = 0;
-        context.shadowOffsetY = 4;
-
-        // Fill with white background
-        context.fillStyle = "#FFFFFF";
-        context.fill();
-        context.restore();
+        // Convert scaled client coordinates to canvas coordinates
+        const canvasX =
+          (scaledX - canvasRect.left) * (canvas.width / canvasRect.width);
+        const canvasY =
+          (scaledY - canvasRect.top) * (canvas.height / canvasRect.height);
 
         // Apply zoom transformation
         context.save();
-        context.translate(zoomX, zoomY);
+        context.translate(canvasX, canvasY);
         context.scale(zoomScale, zoomScale);
-        context.translate(-zoomX, -zoomY);
+        context.translate(-canvasX, -canvasY);
 
-        // Draw the video
+        // Draw the video frame
         context.drawImage(video, padding, padding, frameWidth, frameHeight);
         context.restore();
       } else {
