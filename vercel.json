@@ -1,0 +1,27 @@
+{
+  "rewrites": [
+    {
+      "source": "/cloudfront/:path*",
+      "destination": "https://d1poalkxwk2s2e.cloudfront.net/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/cloudfront/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET,OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "*"
+        }
+      ]
+    }
+  ]
+}
