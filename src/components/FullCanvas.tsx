@@ -30,33 +30,117 @@ const FullCanvasVideoPlayer: React.FC<FullCanvasVideoPlayerProps> = ({
   // If the current time is within that interval, we apply zoom.
   const getActiveEvent = (
     currentTime: number
-  ): { event: CustomMouseEvent | null; zoomScale: number } => {
-    for (const evt of mouseEvents) {
-      const startTime = evt.timestamp - 1;
-      const endTime = evt.timestamp + 1;
+  ): {
+    event: CustomMouseEvent | null;
+    zoomScale: number;
+    transitionX?: number;
+    transitionY?: number;
+  } => {
+    // First pass: identify sequences
+    const sequences: CustomMouseEvent[][] = [];
+    let currentSequence: CustomMouseEvent[] = [];
 
-      if (currentTime >= startTime && currentTime <= endTime) {
-        // Calculate zoom scale based on position in the timeline
-        let zoomScale = 2; // Default max zoom
+    // Helper to calculate distance between two events
+    const getDistance = (evt1: CustomMouseEvent, evt2: CustomMouseEvent) => {
+      const dx = evt1.x - evt2.x;
+      const dy = evt1.y - evt2.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
 
-        // Zoom in transition (over 0.5s)
-        if (currentTime < startTime + 0.5) {
-          const progress = (currentTime - startTime) / 0.5;
-          zoomScale = 1 + progress; // Linear interpolation from 1 to 2
-        }
-        // Maintain full zoom
-        else if (currentTime <= endTime - 0.5) {
-          zoomScale = 2;
-        }
-        // Zoom out transition (over 0.5s)
-        else {
-          const progress = (endTime - currentTime) / 0.5;
-          zoomScale = 1 + progress; // Linear interpolation from 1 to 2
-        }
+    // Constants for sequence detection
+    const MAX_TIME_GAP = 2.5; // 2 seconds
+    const MAX_DISTANCE = 300; // 200 pixels, adjust this based on your needs
 
-        return { event: evt, zoomScale };
+    for (let i = 0; i < mouseEvents.length; i++) {
+      const evt = mouseEvents[i];
+
+      if (currentSequence.length === 0) {
+        currentSequence.push(evt);
+      } else {
+        const lastEvent = currentSequence[currentSequence.length - 1];
+        const timeGap = evt.timestamp - lastEvent.timestamp;
+        const distance = getDistance(evt, lastEvent);
+
+        if (timeGap <= MAX_TIME_GAP && distance <= MAX_DISTANCE) {
+          currentSequence.push(evt);
+        } else {
+          sequences.push([...currentSequence]);
+          currentSequence = [evt];
+        }
       }
     }
+    if (currentSequence.length > 0) {
+      sequences.push(currentSequence);
+    }
+
+    // Second pass: find active sequence and event
+    for (let i = 0; i < sequences.length; i++) {
+      const sequence = sequences[i];
+      const firstEvent = sequence[0];
+      const lastEvent = sequence[sequence.length - 1];
+      const sequenceStartTime = firstEvent.timestamp - 1;
+      const sequenceEndTime = lastEvent.timestamp + 1;
+
+      if (
+        currentTime >= sequenceStartTime - 0.5 &&
+        currentTime <= sequenceEndTime + 0.5
+      ) {
+        // Find the two closest events for interpolation
+        let activeEvent = firstEvent;
+        let nextEvent = firstEvent;
+
+        for (let j = 0; j < sequence.length; j++) {
+          const evt = sequence[j];
+          if (evt.timestamp <= currentTime) {
+            activeEvent = evt;
+            nextEvent = sequence[Math.min(j + 1, sequence.length - 1)];
+          }
+        }
+
+        let zoomScale = 2; // Default max zoom
+        let transitionX = activeEvent.x;
+        let transitionY = activeEvent.y;
+
+        // Calculate position interpolation if we're between two events in a sequence
+        if (activeEvent !== nextEvent && sequence.length > 1) {
+          const progress =
+            (currentTime - activeEvent.timestamp) /
+            (nextEvent.timestamp - activeEvent.timestamp);
+          transitionX =
+            activeEvent.x + (nextEvent.x - activeEvent.x) * progress;
+          transitionY =
+            activeEvent.y + (nextEvent.y - activeEvent.y) * progress;
+        }
+
+        // Handle zoom transitions
+        const ZOOM_DURATION = 1.0; // 1 second transitions
+
+        // Zoom in
+        if (currentTime < sequenceStartTime + 0.5) {
+          const progress =
+            (currentTime - sequenceStartTime + 0.5) / ZOOM_DURATION;
+          zoomScale = 1 + Math.max(0, Math.min(1, progress));
+        }
+        // Stay zoomed during sequence
+        else if (currentTime <= sequenceEndTime - 0.5) {
+          zoomScale = 2;
+        }
+        // Zoom out
+        else {
+          const timeLeft = sequenceEndTime + 0.5 - currentTime;
+          const progress = Math.max(0, Math.min(1, timeLeft / ZOOM_DURATION));
+          zoomScale = 1 + progress;
+        }
+
+        return {
+          event: activeEvent,
+          zoomScale,
+          transitionX,
+          transitionY,
+        };
+      }
+    }
+
     return { event: null, zoomScale: 1 };
   };
 
@@ -122,7 +206,12 @@ const FullCanvasVideoPlayer: React.FC<FullCanvasVideoPlayerProps> = ({
       const frameHeight = canvas.height - padding * 2;
 
       // Determine if we are in a zoom event
-      const { event: activeEvt, zoomScale } = getActiveEvent(video.currentTime);
+      const {
+        event: activeEvt,
+        zoomScale,
+        transitionX,
+        transitionY,
+      } = getActiveEvent(video.currentTime);
 
       if (activeEvt && canvas && !video.ended) {
         // Get the canvas's bounding rectangle to handle scaling
@@ -132,11 +221,12 @@ const FullCanvasVideoPlayer: React.FC<FullCanvasVideoPlayerProps> = ({
         const windowScaleX = window.innerWidth / activeEvt.windowWidth;
         const windowScaleY = window.innerHeight / activeEvt.windowHeight;
 
-        // Scale the coordinates based on window size changes
-        const scaledX = activeEvt.x * windowScaleX;
-        const scaledY = activeEvt.y * windowScaleY;
+        // Use interpolated coordinates if available
+        const targetX = activeEvt.x;
+        const targetY = activeEvt.y;
+        const scaledX = (transitionX ?? targetX) * windowScaleX;
+        const scaledY = (transitionY ?? targetY) * windowScaleY;
 
-        // Convert scaled client coordinates to canvas coordinates
         const canvasX =
           (scaledX - canvasRect.left) * (canvas.width / canvasRect.width);
         const canvasY =
