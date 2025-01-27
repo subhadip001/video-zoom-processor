@@ -1,13 +1,50 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { VideoPlayer } from "./components/VideoPlayer";
 import { CustomMouseEvent } from "./types/types";
 import "./styles/components.css";
 import CanvasVideoPlayer from "./components/Canvas";
 import FullCanvasVideoPlayer from "./components/FullCanvas";
+import supabase from "./utils/supabase";
 
 function App() {
   const [videoUrl, setVideoUrl] = useState<string>("");
   const [mouseEvents, setMouseEvents] = useState<CustomMouseEvent[]>([]);
+  // const [pid, setPid] = useState<string | null>(null);
+
+  // useEffect(() => {
+  //   // Get pid from URL query parameters
+  //   const searchParams = new URLSearchParams(window.location.search);
+  //   const pidParam = searchParams.get("pid");
+  //   setPid(pidParam);
+  // }, []); // Empty dependency array means this runs once when component mounts
+
+  async function fetchProject() {
+    const searchParams = new URLSearchParams(window.location.search);
+    const pidParam = searchParams.get("pid");
+    if (!pidParam) return;
+    const { data, error } = await supabase
+      .from("screen-captures")
+      .select("*")
+      .eq("projectId", pidParam)
+      .single();
+    if (error) {
+      console.log(error);
+      return;
+    }
+
+    console.log(data);
+    // Rewrite CloudFront URL to use local proxy
+    const proxyUrl = data.videoUrl.replace(
+      'https://d1poalkxwk2s2e.cloudfront.net',
+      '/cloudfront'
+    );
+    setVideoUrl(proxyUrl);
+    setMouseEvents(data.events.events as CustomMouseEvent[]);
+  }
+
+  useEffect(() => {
+    fetchProject();
+  }, []);
 
   const handleVideoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
