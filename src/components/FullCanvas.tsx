@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { CustomMouseEvent } from "../types/types";
 import { VideoControls } from "./VideoControls";
 
-interface CanvasVideoPlayerProps {
+interface FullCanvasVideoPlayerProps {
   videoUrl: string;
   mouseEvents: CustomMouseEvent[];
 }
@@ -13,7 +13,7 @@ interface CanvasVideoPlayerProps {
  * time is within (t - 1, t + 1) seconds of a recorded click
  * at timestamp t, it applies a zoom effect at the clicked (x, y) area.
  */
-const CanvasVideoPlayer: React.FC<CanvasVideoPlayerProps> = ({
+const FullCanvasVideoPlayer: React.FC<FullCanvasVideoPlayerProps> = ({
   videoUrl,
   mouseEvents,
 }) => {
@@ -97,52 +97,178 @@ const CanvasVideoPlayer: React.FC<CanvasVideoPlayerProps> = ({
 
     // Draw each frame to canvas with optional zoom effect
     const renderFrame = () => {
-      if (!video.paused && !video.ended) {
+      if (!video.paused) {
         requestAnimationFrame(renderFrame);
-      } else if (video.ended) {
-        // Force one last render without zoom when video ends
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        return;
       }
+      //   else if (video.ended) {
+      //     // Force one last render without zoom when video ends
+      //     context.clearRect(0, 0, canvas.width, canvas.height);
+      //     context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      //     return;
+      //   }
 
       // Clear canvas
       context.clearRect(0, 0, canvas.width, canvas.height);
+
+      const padding = 120;
+      const borderRadius = 16;
+
+      // Draw background
+      context.fillStyle = "#FFC107";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Calculate video frame dimensions with padding
+      const frameWidth = canvas.width - padding * 2;
+      const frameHeight = canvas.height - padding * 2;
 
       // Determine if we are in a zoom event
       const { event: activeEvt, zoomScale } = getActiveEvent(video.currentTime);
 
       if (activeEvt && canvas && !video.ended) {
         // Calculate the scaled coordinates based on canvas size
-        const scaleX = canvas.width / window.innerWidth;
-        const scaleY = canvas.height / window.innerHeight;
+        const scaleX = frameWidth / window.innerWidth;
+        const scaleY = frameHeight / window.innerHeight;
 
-        const zoomX = activeEvt.x * scaleX;
-        const zoomY = activeEvt.y * scaleY;
+        const zoomX = activeEvt.x * scaleX + padding;
+        const zoomY = activeEvt.y * scaleY + padding;
 
-        // Translate context to center the zoom at the scaled (x, y) from event
+        // Draw the background container with shadow
+        context.save();
+        context.beginPath();
+        context.moveTo(padding + borderRadius, padding);
+        context.lineTo(padding + frameWidth - borderRadius, padding);
+        context.quadraticCurveTo(
+          padding + frameWidth,
+          padding,
+          padding + frameWidth,
+          padding + borderRadius
+        );
+        context.lineTo(
+          padding + frameWidth,
+          padding + frameHeight - borderRadius
+        );
+        context.quadraticCurveTo(
+          padding + frameWidth,
+          padding + frameHeight,
+          padding + frameWidth - borderRadius,
+          padding + frameHeight
+        );
+        context.lineTo(padding + borderRadius, padding + frameHeight);
+        context.quadraticCurveTo(
+          padding,
+          padding + frameHeight,
+          padding,
+          padding + frameHeight - borderRadius
+        );
+        context.lineTo(padding, padding + borderRadius);
+        context.quadraticCurveTo(
+          padding,
+          padding,
+          padding + borderRadius,
+          padding
+        );
+        context.closePath();
+
+        // Add shadow
+        context.shadowColor = "rgba(0, 0, 0, 0.3)";
+        context.shadowBlur = 20;
+        context.shadowOffsetX = 0;
+        context.shadowOffsetY = 4;
+
+        // Fill with white background
+        context.fillStyle = "#FFFFFF";
+        context.fill();
+        context.restore();
+
+        // Apply zoom transformation
         context.save();
         context.translate(zoomX, zoomY);
         context.scale(zoomScale, zoomScale);
         context.translate(-zoomX, -zoomY);
 
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // Draw the video
+        context.drawImage(video, padding, padding, frameWidth, frameHeight);
         context.restore();
       } else {
-        // Draw normally if not in a zoom period
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // For non-zoom state, draw with clipping
+        context.save();
+
+        // Create clipping path
+        context.beginPath();
+        context.moveTo(padding + borderRadius, padding);
+        context.lineTo(padding + frameWidth - borderRadius, padding);
+        context.quadraticCurveTo(
+          padding + frameWidth,
+          padding,
+          padding + frameWidth,
+          padding + borderRadius
+        );
+        context.lineTo(
+          padding + frameWidth,
+          padding + frameHeight - borderRadius
+        );
+        context.quadraticCurveTo(
+          padding + frameWidth,
+          padding + frameHeight,
+          padding + frameWidth - borderRadius,
+          padding + frameHeight
+        );
+        context.lineTo(padding + borderRadius, padding + frameHeight);
+        context.quadraticCurveTo(
+          padding,
+          padding + frameHeight,
+          padding,
+          padding + frameHeight - borderRadius
+        );
+        context.lineTo(padding, padding + borderRadius);
+        context.quadraticCurveTo(
+          padding,
+          padding,
+          padding + borderRadius,
+          padding
+        );
+        context.closePath();
+
+        // Add shadow
+        context.shadowColor = "rgba(0, 0, 0, 0.3)";
+        context.shadowBlur = 20;
+        context.shadowOffsetX = 0;
+        context.shadowOffsetY = 4;
+
+        // Fill with white background
+        context.fillStyle = "#FFFFFF";
+        context.fill();
+
+        // Reset shadow before clipping
+        context.shadowColor = "transparent";
+        context.shadowBlur = 0;
+        context.shadowOffsetX = 0;
+        context.shadowOffsetY = 0;
+
+        // Apply clipping path
+        context.clip();
+
+        // Draw the video
+        context.drawImage(video, padding, padding, frameWidth, frameHeight);
+        context.restore();
       }
+
+      // Reset shadow
+      context.shadowColor = "transparent";
+      context.shadowBlur = 0;
+      context.shadowOffsetX = 0;
+      context.shadowOffsetY = 0;
     };
 
     video.addEventListener("loadedmetadata", handleLoadedMetadata);
     video.addEventListener("play", () => {
       requestAnimationFrame(renderFrame);
     });
-    video.addEventListener("ended", () => {
-      // Ensure we render one last frame without zoom
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    });
+    // video.addEventListener("ended", () => {
+    //   // Ensure we render one last frame without zoom
+    //     context.clearRect(0, 0, canvas.width, canvas.height);
+    //     context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // });
 
     return () => {
       video.removeEventListener("loadedmetadata", handleLoadedMetadata);
@@ -193,15 +319,9 @@ const CanvasVideoPlayer: React.FC<CanvasVideoPlayerProps> = ({
     >
       <div
         style={{
-          width: "100%",
-          height: "100%",
-          backgroundColor: "orange",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "2rem",
           borderRadius: "8px 8px 0px 0px",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+          overflow: "hidden",
+          boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.15)",
         }}
       >
         <video
@@ -209,6 +329,7 @@ const CanvasVideoPlayer: React.FC<CanvasVideoPlayerProps> = ({
           src={videoUrl}
           style={{ display: "none" }}
           autoPlay
+          loop
           playsInline
         />
         <canvas
@@ -216,14 +337,15 @@ const CanvasVideoPlayer: React.FC<CanvasVideoPlayerProps> = ({
           width={width}
           height={height}
           style={{
-            maxWidth: "100%",
+            width: "100%",
             height: "auto",
             display: "block",
             margin: "0 auto",
-            borderRadius: "4px",
+            borderRadius: "",
           }}
         />
       </div>
+
       <VideoControls
         currentTime={currentTime}
         duration={duration}
@@ -235,4 +357,4 @@ const CanvasVideoPlayer: React.FC<CanvasVideoPlayerProps> = ({
   );
 };
 
-export default CanvasVideoPlayer;
+export default FullCanvasVideoPlayer;

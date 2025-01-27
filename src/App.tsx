@@ -3,6 +3,7 @@ import { VideoPlayer } from "./components/VideoPlayer";
 import { CustomMouseEvent } from "./types/types";
 import "./styles/components.css";
 import CanvasVideoPlayer from "./components/Canvas";
+import FullCanvasVideoPlayer from "./components/FullCanvas";
 
 function App() {
   const [videoUrl, setVideoUrl] = useState<string>("");
@@ -95,10 +96,8 @@ function App() {
           </label>
         </div>
       )}
-
       {videoUrl && (
-        // <VideoPlayer videoUrl={videoUrl} mouseEvents={mouseEvents} />
-        <CanvasVideoPlayer videoUrl={videoUrl} mouseEvents={mouseEvents} />
+        <FullCanvasVideoPlayer videoUrl={videoUrl} mouseEvents={mouseEvents} />
       )}
     </div>
   );
