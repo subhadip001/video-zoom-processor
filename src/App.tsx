@@ -35,8 +35,8 @@ function App() {
     console.log(data);
     // Rewrite CloudFront URL to use local proxy
     const proxyUrl = data.videoUrl.replace(
-      'https://d1poalkxwk2s2e.cloudfront.net',
-      '/cloudfront'
+      "https://d1poalkxwk2s2e.cloudfront.net",
+      "/cloudfront"
     );
     setVideoUrl(proxyUrl);
     setMouseEvents(data.events.events as CustomMouseEvent[]);

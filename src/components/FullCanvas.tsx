@@ -735,6 +735,24 @@ export default function FullCanvasVideoPlayer({
     };
   }, []);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !videoUrl) return;
+
+    const playVideo = async () => {
+      try {
+        await video.play();
+      } catch (error) {
+        console.error('Error playing video:', error);
+      }
+    };
+
+    video.addEventListener('loadeddata', playVideo);
+    return () => {
+      video.removeEventListener('loadeddata', playVideo);
+    };
+  }, [videoUrl]);
+
   async function handleExport() {
     try {
       setIsExporting(true);
@@ -755,6 +773,7 @@ export default function FullCanvasVideoPlayer({
         style={{ display: "none" }}
         autoPlay
         playsInline
+        muted
         onLoadedMetadata={(e) => {
           const video = videoRef.current;
           if (!video) return;
