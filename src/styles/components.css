@@ -1,0 +1,274 @@
+/* App styles */
+.app-container {
+  width: 100dvw;
+  margin: 0 auto;
+  padding: 2rem;
+  min-height: 100vh;
+  background-color: #f1f5f9;
+}
+
+.input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .input-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.input-card {
+  background: white;
+  border-radius: 1.5rem;
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-align: center;
+}
+
+.input-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.card-icon {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 1.5rem;
+  color: #64748b;
+}
+
+.card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.75rem;
+}
+
+.card-description {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Video Player styles */
+.video-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.video-wrapper {
+  width: 100%;
+  position: relative;
+  background: #000;
+}
+
+.video-content-wrapper {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.video-content {
+  width: 100%;
+  position: relative;
+}
+
+.video-player {
+  width: 100% !important;
+  height: 100% !important;
+  position: relative;
+  z-index: 1;
+}
+
+.video-player video {
+  width: 100%;
+  height: 100%;
+  /* object-fit: contain; */
+}
+
+/* Controls should be above the zoom effect */
+.video-player :global(.react-player__controls) {
+  z-index: 2;
+}
+
+.zoom-indicator {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border: 2px solid rgba(99, 102, 241, 0.8);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10;
+  backdrop-filter: blur(2px);
+}
+
+/* Timeline styles */
+.timeline-container {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  gap: 1rem;
+  border-top: 1px solid #f1f5f9;
+  background: white;
+  flex-shrink: 0;
+}
+
+.time-display {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+  width: 48px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.timeline-track {
+  position: relative;
+  flex: 1;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.timeline-track-bg {
+  height: 2px;
+  background: #e2e8f0;
+  width: 100%;
+  position: relative;
+}
+
+.timeline-progress {
+  position: absolute;
+  height: 100%;
+  background: #6366f1;
+  border-radius: 1px;
+}
+
+.timeline-marker {
+  position: absolute;
+  width: 2px;
+  height: 8px;
+  background: #94a3b8;
+  transform: translate(-50%, -3px);
+  cursor: pointer;
+  transition: height 0.2s, background-color 0.2s;
+}
+
+.timeline-marker:hover {
+  height: 12px;
+  background: #64748b;
+}
+
+.timeline-marker.active {
+  height: 12px;
+  transform: translate(-50%, -5px);
+  background: #475569;
+}
+
+.current-time-indicator {
+  position: absolute;
+  width: 2px;
+  height: 100%;
+  background: #475569;
+  transform: translateX(-50%);
+}
+
+/* Timeline and controls */
+.timeline-container {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.control-button {
+  background: none;
+  border: none;
+  color: #475569;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+  border-radius: 0.25rem;
+}
+
+.control-button:hover {
+  background: #f1f5f9;
+}
+
+.timeline-track {
+  position: relative;
+  height: 24px;
+  margin: 0.5rem 0;
+}
+
+.timeline-slider {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+  margin: 0;
+}
+
+.timeline-progress {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 4px;
+  background: #3b82f6;
+  border-radius: 2px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.timeline-track::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 4px;
+  background: #e2e8f0;
+  transform: translateY(-50%);
+  border-radius: 2px;
+}
+
+.time-display {
+  font-size: 0.875rem;
+  font-family: monospace;
+  color: #475569;
+}
